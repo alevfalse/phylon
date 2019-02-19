@@ -12,6 +12,9 @@ async def TossCoin(ctx):
 
 async def Chat(message):
 
+	if message.author.bot:
+		return
+		
     askload = {
         'user': 'Pdfu3Nhlleco3YVA',
         'key': 'oFVi3hcOv7QXTherbQweVM2C8mErLzKv',
