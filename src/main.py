@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 load_dotenv(verbose=True)
 
 import os
+import sys
 import discord
 import logging
 from discord.ext import commands
@@ -10,19 +11,57 @@ from discord.ext import commands
 import config
 import database
 import functions
+import fun
 
 logging.basicConfig(level=logging.INFO)
 
 Bot = commands.Bot(command_prefix=config.prefix, description=config.description)
 Bot.owner_id = config.OwnerID
 
+# EVENTS =========================================================================
 @Bot.event
 async def on_ready():
     '''When the bot starts up.'''
     logging.info('{} reporting for duty!'.format(Bot.user.display_name))
 
+@Bot.event
+async def on_command_error(ctx, error):
+    '''When a command error occurs'''
+    await ctx.send(error)
+
+@Bot.event
+async def on_message(message):
+    await Bot.process_commands(message)
+    if (message.channel.id == config.ChatChannelID):
+        await fun.Chat(message)
 
 # COMMANDS =========================================================================
+@Bot.command()
+async def get(ctx, id):
+    '''Get a code snippet using its id.'''
+    await database.get(ctx, id)
+
+@Bot.command()
+async def save(ctx, title, *, snippet):
+    '''Save a string into the database with title.'''
+    await database.save(ctx, title, snippet)
+
+@Bot.command()
+async def getall(ctx):
+    '''Lists all code snippets saved in the database by id, title and author.'''
+    await database.getall(ctx)
+
+@Bot.command()
+async def edit(ctx, id):
+    '''Update a snippet using its id.'''
+    await database.edit(ctx, id)
+
+@Bot.command()
+async def delete(ctx, id):
+    '''Delete a snippet using its id.'''
+    await database.delete(ctx, id)
+
+# FOR FUN ========================================================================
 @Bot.command()
 async def say(ctx, *, text):
     '''Make the bot say something.'''
@@ -30,25 +69,23 @@ async def say(ctx, *, text):
     await ctx.send(text)
 
 @Bot.command()
-async def evaluate(ctx, *, code):
-    '''Evaluate a python code\'s syntax.'''
-    await functions.evaluateCode(ctx, code)
+async def toss(ctx):
+    '''Toss a coin.'''
+    await fun.TossCoin(ctx)
+
+# MISC =============================================================================
+@Bot.command()
+async def cmd(ctx):
+    '''Posts all available commands.'''
+    await functions.sendCommands(ctx)
 
 @Bot.command()
-async def saveCode(ctx, title, *, code):
-    '''Save a string into the database with title.'''
-    await database.saveCode(ctx, title, code)
+async def shutdown(ctx):
+    '''Logs out the bot and exits the script.'''
+    await ctx.send('Shutting down...')
+    sys.exit('Shutdown by {}'.format(ctx.author.display_name))
 
-@Bot.command()
-async def getCode(ctx, title):
-    '''Get a code snippet using its title.'''
-    await database.getCode(ctx, title)
-
-@Bot.command()
-async def listCodes(ctx):
-    '''Lists all code snippets saved in the database by title and author.'''
-    await database.listCodes(ctx)
-
+# LOGIN
 if os.getenv('TOKEN'):
     Bot.run(os.getenv('TOKEN'))
 else:

@@ -1,4 +1,5 @@
 .env
 .phylonvirtualenv/
+phylonenv/
 __pycache__/
 db.sqlite3
